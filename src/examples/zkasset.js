@@ -59,6 +59,7 @@ async function main() {
 									bobNotes, 
 									instances.zkAssetMintable, instances.joinSplit, txOptions);
 	console.log(lineBreak);
+	process.exit(0);
 } 
 
 main();
