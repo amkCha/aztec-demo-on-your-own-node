@@ -1,0 +1,15 @@
+{
+  "name": "aztec-pantheon-examples",
+  "version": "0.0.1",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@aztec/dev-utils": "^1.7.0",
+    "aztec.js": "^0.7.0",
+    "truffle-contract": "^4.0.11",
+    "truffle-hdwallet-provider": "^1.0.0-web3one.5"
+  },
+  "scripts": {
+    "zkasset": "node ./src/examples/zkasset.js"
+  }
+}
