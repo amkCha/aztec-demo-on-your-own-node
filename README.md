@@ -10,7 +10,7 @@ Please read:
 - [our blog post for more context](https://pegasys.tech)
 - AZTEC whitepaper 
 - AZTEC specification
-- our [cheat sheet](AZTEC cheat sheet.pdf)
+- our [cheat sheet](aztec_cheatsheet.pdf)
 
 ### run pantheon (dev mode)
 
