@@ -10,6 +10,7 @@
     "truffle-hdwallet-provider": "^1.0.0-web3one.5"
   },
   "scripts": {
-    "zkasset": "node ./src/examples/zkasset.js"
+    "zkasset": "node ./src/examples/zkasset.js",
+    "zkasset-erc20": "node ./src/examples/zkasset-erc20.js"
   }
 }

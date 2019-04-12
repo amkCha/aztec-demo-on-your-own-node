@@ -1,3 +1,17 @@
+// Copyright 2018 ConsenSys AG
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // -------------------------------------------------------------------------------------------------
 // imports
 const pantheon  =  require("../pantheon.js");
@@ -21,9 +35,7 @@ async function main() {
 	let txOptions = {from: accounts[0], gasLimit: "0x47B760", gasPrice: "0x12A05F200"};
 
 	// deploy AZTEC contracts (CryptoEngine, proof validators and ZkAssetMintable)
-	console.log(lineBreak);
 	let instances = await aztec.instantiate(pantheon, txOptions);
-	console.log(lineBreak);
 
 	// ---------------------------------------------------------------------------------------------
 	// generate random AZTEC accounts for alice and bob
@@ -46,7 +58,6 @@ async function main() {
 		aztec.note.create(alice.publicKey, 50),
 	];
 	await aztec.mintConfidentialAsset(aliceNotes, instances.zkAssetMintable, txOptions);
-	console.log(lineBreak);
 
 	// ---------------------------------------------------------------------------------------------
 	// Confidential transfer of the asset	
@@ -57,8 +68,7 @@ async function main() {
 	];
 	await aztec.confidentialTransfer(aliceNotes, [alice, alice], 
 									bobNotes, 
-									instances.zkAssetMintable, instances.joinSplit, txOptions);
-	console.log(lineBreak);
+									instances.zkAssetMintable, instances.joinSplit, accounts[0], txOptions);
 	process.exit(0);
 } 
 

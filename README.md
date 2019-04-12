@@ -22,6 +22,11 @@ docker run -p 8545:8545  pegasyseng/pantheon:latest --miner-enabled --miner-coin
 git clone git@github.com:pegasyseng/pantheon-aztec-quickstart.git
 cd pantheon-aztec-quickstart
 yarn install
+```
+```
+yarn run zkasset-erc20
+```
+```
 yarn run zkasset
 ```
 
@@ -30,8 +35,8 @@ yarn run zkasset
 
 ### regenerate contracts/artifacts
 
-These artifacts are produced by AZTEC/packages/protocol scripts.
-Run:
+The artifacts located in contracts/artifacts are produced by AZTEC/packages/protocol scripts.
+To re-generate them, run:
 ```
 git clone git@github.com:AztecProtocol/AZTEC.git
 cd AZTEC/packages/protocol
@@ -39,4 +44,9 @@ yarn install
 yarn run compile
 yarn run build:artifacts
 ```
-Will generate JSON artifacts for the contracts in `AZTEC/packages/contract-artifacts/artifacts/`
+Outputs the JSON artifacts for the contracts in `AZTEC/packages/contract-artifacts/artifacts/`
+
+
+## License
+
+This project is licensed under the Apache 2 License - see the [LICENSE](LICENSE) file for details
