@@ -1,5 +1,8 @@
 # pantheon-aztec-quickstart
 
+## Warning :rotating_light:
+This repository is now DEPRECATED. 
+
 ## dependencies
 
 You need to install `node`, `yarn` and `docker`. 
