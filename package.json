@@ -4,10 +4,10 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
-    "@aztec/dev-utils": "^1.7.0",
-    "aztec.js": "^0.7.0",
-    "truffle-contract": "^4.0.11",
-    "truffle-hdwallet-provider": "^1.0.0-web3one.5"
+    "@aztec/dev-utils": "^2.4.0",
+    "aztec.js": "^0.17.0",
+    "truffle-contract": "^4.0.31",
+    "@truffle/hdwallet-provider": "^1.0.33"
   },
   "scripts": {
     "zkasset": "node ./src/examples/zkasset.js",

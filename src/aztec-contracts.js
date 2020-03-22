@@ -16,6 +16,8 @@
 // AZTEC library imports
 const {	constants, proofs }                  = require("@aztec/dev-utils");
 const { secp256k1, note, proof, abiEncoder } = require("aztec.js");
+const bn128 = require('@aztec/bn128');
+
 
 const lineBreak = "________________________________________________________________________\n";
 
@@ -27,16 +29,34 @@ async function instantiate(pantheon, txOptions) {
 	console.log(lineBreak);
 	console.log("deploying AZTEC contracts...")
 
-	// get contracts schemas
-	const ACE                 = await pantheon.readContract("ACE.json");
-	const ZKASSET_MINTABLE    = await pantheon.readContract("ZkAssetMintable.json");
-	const JOINSPLIT           = await pantheon.readContract("JoinSplit.json");
-	const ADJUST_SUPPLY       = await pantheon.readContract("AdjustSupply.json");
-	const ERC20_MINTABLE	  = await pantheon.readContract("ERC20Mintable.json");
-	const ZKASSET			  = await pantheon.readContract("ZkAsset.json");
+  // get contracts schemas
+  let ACE;
+  let ZKASSET_MINTABLE;
+  let JOINSPLIT;
+  let ADJUST_SUPPLY;
+  let ERC20_MINTABLE;
+  let ZKASSET;
+  try {
+  ACE                 = await pantheon.readContract("ACE.json");
+  // console.log(ACE)
+	ZKASSET_MINTABLE    = await pantheon.readContract("ZkAssetMintable.json");
+  // console.log(ZKASSET_MINTABLE)
+	JOINSPLIT           = await pantheon.readContract("JoinSplit.json");
+  // console.log(JOINSPLIT)
+	ADJUST_SUPPLY       = await pantheon.readContract("AdjustSupply.json");
+  // console.log(ADJUST_SUPPLY)
+	ERC20_MINTABLE	  = await pantheon.readContract("ERC20Mintable.json");
+  // console.log(ERC20_MINTABLE)
+  ZKASSET			  = await pantheon.readContract("ZkAsset.json");
+  // console.log(ZKASSET)
+  } catch (e) {
+    console.log(e)
+  }
 
-	// deploy crypto engine contract
-	instances.ace             = await ACE.new(txOptions);
+  // deploy crypto engine contract
+  try {
+  instances.ace             = await ACE.new(txOptions);
+  // console.log(instances.ace);
 	instances.joinSplit       = await JOINSPLIT.new(txOptions);
 	instances.adjustSupply    = await ADJUST_SUPPLY.new(txOptions);
 	instances.erc20			  = await ERC20_MINTABLE.new(txOptions);
@@ -55,11 +75,17 @@ async function instantiate(pantheon, txOptions) {
 		false, 											// canMint
 		true,  											// canConvert
 		txOptions
-	);
+  );
+  } catch (e) {
+    console.log(e)
+  }
 
-	// set CRS and proof systems addresses
-	await instances.ace.setCommonReferenceString(constants.CRS, txOptions);
+  // set CRS and proof systems addresses
+  // console.log(instances.ace);
+	await instances.ace.setCommonReferenceString(bn128.CRS, txOptions);
+  // console.log(instances.ace.setProof);
 	await instances.ace.setProof(proofs.JOIN_SPLIT_PROOF, instances.joinSplit.address, txOptions);
+  // console.log(instances.ace.setProof);
 	await instances.ace.setProof(proofs.MINT_PROOF, instances.adjustSupply.address, txOptions);
 	
 	console.log("deployed ace at:             " + instances.ace.address);
