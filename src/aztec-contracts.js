@@ -14,9 +14,10 @@
 
 // -------------------------------------------------------------------------------------------------
 // AZTEC library imports
-const {	constants, proofs }                  = require("@aztec/dev-utils");
-const { secp256k1, note, proof, abiEncoder } = require("aztec.js");
+const {	proofs }                  = require("@aztec/dev-utils");
+const { note, proof, abiEncoder } = require("aztec.js");
 const bn128 = require('@aztec/bn128');
+const secp256k1 = require('@aztec/secp256k1');
 
 
 const lineBreak = "________________________________________________________________________\n";

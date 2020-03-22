@@ -36,15 +36,13 @@ async function main() {
 
 	// deploy AZTEC contracts (CryptoEngine, proof validators and ZkAssetMintable)
   
-  let instances
+  let instances;
   
   try {
     instances = await aztec.instantiate(pantheon, txOptions);
   } catch (e) {
     console.log(e)
   }
-
-  console.log("instances", instances)
 
 	// ---------------------------------------------------------------------------------------------
 	// generate random AZTEC accounts for alice and bob
@@ -53,12 +51,12 @@ async function main() {
 	// by alice and bob) would need to be signed by a valid Ethereum account (presumably owned by
   // alice or bob)
   
-	// const alice = aztec.secp256k1.generateAccount();
-	// const bob   = aztec.secp256k1.generateAccount();
-	// console.log("creating identities:")
-	// console.log(JSON.stringify({name: "alice", address: alice.address}, null, 2));
-	// console.log(JSON.stringify({name: "bob", address: bob.address}, null, 2));
-	// console.log(lineBreak);
+	const alice = aztec.secp256k1.generateAccount();
+	const bob   = aztec.secp256k1.generateAccount();
+	console.log("creating identities:")
+	console.log(JSON.stringify({name: "alice", address: alice.address}, null, 2));
+	console.log(JSON.stringify({name: "bob", address: bob.address}, null, 2));
+	console.log(lineBreak);
 
 	// ---------------------------------------------------------------------------------------------
   // Minting inital supply of confidental asset
