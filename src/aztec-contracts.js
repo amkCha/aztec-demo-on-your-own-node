@@ -14,8 +14,10 @@
 
 // -------------------------------------------------------------------------------------------------
 // AZTEC library imports
-const {	proofs }                  = require("@aztec/dev-utils");
-const { note, proof, abiEncoder } = require("aztec.js");
+const {	proofs, constants: { ERC20_SCALING_FACTOR } } = require("@aztec/dev-utils");
+const devUtils = require('@aztec/dev-utils');
+const { JOIN_SPLIT_PROOF, MINT_PROOF } = devUtils.proofs;
+const { note, MintProof, abiEncoder } = require("aztec.js");
 const bn128 = require('@aztec/bn128');
 const secp256k1 = require('@aztec/secp256k1');
 
@@ -23,7 +25,7 @@ const secp256k1 = require('@aztec/secp256k1');
 const lineBreak = "________________________________________________________________________\n";
 
 // -------------------------------------------------------------------------------------------------
-// Instantiate contracts: CryptoEngine, proof systems, zkAsset[...]
+// Instantiate contracts: CryptoEngine, proof systems, factories, zkAsset[...]
 async function instantiate(pantheon, txOptions) {
 	var instances = {};
 
@@ -32,74 +34,99 @@ async function instantiate(pantheon, txOptions) {
 
   // get contracts schemas
   let ACE;
-  let ZKASSET_MINTABLE;
   let JOINSPLIT;
-  let ADJUST_SUPPLY;
+  let JOINSPLIT_FLUID;
   let ERC20_MINTABLE;
+  let FACTORY_BASE;
+  let ADJUSTABLE_FACTORY;
+  let ZKASSET_MINTABLE;
   let ZKASSET;
+
   try {
   ACE                 = await pantheon.readContract("ACE.json");
-  // console.log(ACE)
-	ZKASSET_MINTABLE    = await pantheon.readContract("ZkAssetMintable.json");
-  // console.log(ZKASSET_MINTABLE)
 	JOINSPLIT           = await pantheon.readContract("JoinSplit.json");
-  // console.log(JOINSPLIT)
-	ADJUST_SUPPLY       = await pantheon.readContract("AdjustSupply.json");
-  // console.log(ADJUST_SUPPLY)
-	ERC20_MINTABLE	  = await pantheon.readContract("ERC20Mintable.json");
-  // console.log(ERC20_MINTABLE)
-  ZKASSET			  = await pantheon.readContract("ZkAsset.json");
-  // console.log(ZKASSET)
+	JOINSPLIT_FLUID     = await pantheon.readContract("JoinSplitFluid.json");
+	ERC20_MINTABLE	    = await pantheon.readContract("ERC20Mintable.json");
+	FACTORY_BASE        = await pantheon.readContract("FactoryBase201907.json");
+	ADJUSTABLE_FACTORY  = await pantheon.readContract("FactoryAdjustable201907.json");
+	ZKASSET_MINTABLE    = await pantheon.readContract("ZkAssetMintable.json");
+  ZKASSET			        = await pantheon.readContract("ZkAsset.json");
   } catch (e) {
     console.log(e)
   }
 
-  // deploy crypto engine contract
+  // deploy crypto engine contract, proof systems and factories
   try {
   instances.ace             = await ACE.new(txOptions);
-  // console.log(instances.ace);
 	instances.joinSplit       = await JOINSPLIT.new(txOptions);
-	instances.adjustSupply    = await ADJUST_SUPPLY.new(txOptions);
-	instances.erc20			  = await ERC20_MINTABLE.new(txOptions);
+	instances.joinSplitFluid  = await JOINSPLIT_FLUID.new(txOptions);
+	instances.erc20			      = await ERC20_MINTABLE.new(txOptions);
+  instances.factoryBase		  = await FACTORY_BASE.new(instances.ace.address, txOptions);
+  instances.adjustableFactory		  = await ADJUSTABLE_FACTORY.new(instances.ace.address, txOptions);
+  } catch (e) {
+    console.log(e)
+  }
+
+  // Set factories addresses to crypto engine contract 
+  try {
+  await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 1 * 256 ** 0, instances.factoryBase.address, txOptions);
+  await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 2 * 256 ** 0, instances.adjustableFactory.address, txOptions);
+  await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 3 * 256 ** 0, instances.adjustableFactory.address, txOptions);
+  } catch(e) {
+    console.log(e)
+  }
+
+  // Deploy Zk Assets
+  try {
 	instances.zkAssetMintable = await ZKASSET_MINTABLE.new(
 		instances.ace.address, 
-		"0x0000000000000000000000000000000000000000", 	// ERC20 linked address (none)
-		1, 												// scaling factor for ERC20 tokens
-		true, 											// canMint
-		false,  										// canConvert
+		instances.erc20.address, 	                      // ERC20 linked address (cannot be none)
+		ERC20_SCALING_FACTOR, 				          			 // scaling factor for ERC20 tokens
+		0, 										                        	// canMint
+		[],  									                        	// canConvert
 		txOptions
 	);
 	instances.zkAsset         = await ZKASSET.new(
 		instances.ace.address, 
 		instances.erc20.address, 						// ERC20 linked address
-		1, 												// scaling factor for ERC20 tokens
-		false, 											// canMint
-		true,  											// canConvert
+		ERC20_SCALING_FACTOR, 										  // scaling factor for ERC20 tokens
 		txOptions
   );
-  } catch (e) {
+  } catch(e) {
     console.log(e)
   }
 
   // set CRS and proof systems addresses
-  // console.log(instances.ace);
 	await instances.ace.setCommonReferenceString(bn128.CRS, txOptions);
-  // console.log(instances.ace.setProof);
 	await instances.ace.setProof(proofs.JOIN_SPLIT_PROOF, instances.joinSplit.address, txOptions);
-  // console.log(instances.ace.setProof);
-	await instances.ace.setProof(proofs.MINT_PROOF, instances.adjustSupply.address, txOptions);
+	await instances.ace.setProof(proofs.MINT_PROOF, instances.joinSplitFluid.address, txOptions);
 	
-	console.log("deployed ace at:             " + instances.ace.address);
-	console.log("deployed joinSplit at:       " + instances.joinSplit.address);
-	console.log("deployed adjustSupply at:    " + instances.adjustSupply.address);
-	console.log("deployed zkAssetMintable at: " + instances.zkAssetMintable.address);
-	console.log("deployed zkAsset at:         " + instances.zkAsset.address);
-	console.log("deployed erc20 at:           " + instances.erc20.address);
+	console.log("deployed ace at:                " + instances.ace.address);
+	console.log("deployed joinSplit at:          " + instances.joinSplit.address);
+	console.log("deployed joinSplitFluid at:     " + instances.joinSplitFluid.address);
+	console.log("deployed erc20 at:              " + instances.erc20.address);
+	console.log("deployed factoryBase at:        " + instances.factoryBase.address);
+	console.log("deployed adjustableFactory at:  " + instances.adjustableFactory.address);
+	console.log("deployed zkAssetMintable at:    " + instances.zkAssetMintable.address);
+	console.log("deployed zkAsset at:            " + instances.zkAsset.address);
 	console.log(lineBreak);
 
 	return instances;
 };
 
+// -------------------------------------------------
+const getDefaultMintNotes = async () => {
+  const newMintCounter = 50;
+  const mintedNoteValues = [20, 30];
+
+  const aztecAccount = secp256k1.generateAccount();
+  const { publicKey } = aztecAccount;
+
+  const zeroMintCounterNote = await note.createZeroValueNote();
+  const newMintCounterNote = await note.create(publicKey, newMintCounter);
+  const mintedNotes = await Promise.all(mintedNoteValues.map((mintedValue) => note.create(publicKey, mintedValue)));
+  return { zeroMintCounterNote, newMintCounterNote, mintedNotes };
+};
 
 // -------------------------------------------------------------------------------------------------
 // Mint initial supply for a zkAssetMintable
@@ -108,24 +135,21 @@ async function mintConfidentialAsset(notes, zkAssetMintable, txOptions) {
  	var totalMintedValue = 0;
 	for (i = 0; i < notes.length; i++) { 
   		totalMintedValue += notes[i].k.toNumber();
-	}
+  }
 
 	// note representing new total supply
-	const newTotalMinted = note.create(secp256k1.generateAccount().publicKey, totalMintedValue);
-	const oldTotalMinted = note.createZeroValueNote(); // old total minted
-	const adjustedNotes  = notes.map(x => x);
+	const zeroMintCounterNote = await note.createZeroValueNote(); // old total minted
+  const newMintCounterNote = await note.create(secp256k1.generateAccount().publicKey, totalMintedValue);
+  const adjustedNotes  = notes.map(x => x);
 
-	// construct MINT PROOF
-    var { proofData } = proof.mint.encodeMintTransaction({
-        newTotalMinted, // new total minted
-        oldTotalMinted, // old total minted
-        adjustedNotes, 	// new notes distribution
-        senderAddress: zkAssetMintable.address
-    });
+  // construct proof
+  const sender = txOptions.from;
+  const proof = new MintProof(zeroMintCounterNote, newMintCounterNote, adjustedNotes, sender);
+  var proofData = proof.encodeABI()
 
-    // sending the transaction on the blockchain
+  // sending the transaction on the blockchain
 	try {
-		let receipt = await zkAssetMintable.confidentialMint(proofs.MINT_PROOF, proofData, txOptions)
+		let receipt = await zkAssetMintable.confidentialMint(MINT_PROOF, proofData, txOptions)
 		console.log("confidentialMint success. events:");
 		logNoteEvents(receipt.logs);
 		console.log(lineBreak);

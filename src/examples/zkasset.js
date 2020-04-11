@@ -32,7 +32,10 @@ const lineBreak = "_____________________________________________________________
 async function main() {
 	// get web3 Ethereum accounts and setup default transaction options
 	let accounts  = await pantheon.getAccounts();
-	let txOptions = {from: accounts[0], gasLimit: "0x47B760", gasPrice: "0x12A05F200"};
+
+  // Question 1 -- Lift gasLimit ? 
+  let txOptions = {from: accounts[0]};
+  // let txOptions = {from: accounts[0], gasLimit: "0x47B760", gasPrice: "0x12A05F200"};
 
 	// deploy AZTEC contracts (CryptoEngine, proof validators and ZkAssetMintable)
   
@@ -61,21 +64,19 @@ async function main() {
 	// ---------------------------------------------------------------------------------------------
   // Minting inital supply of confidental asset
   
-	// console.log("minting asset (2 notes for alice, value 100 and 50)");
-	// const aliceNotes = [
-	// 	aztec.note.create(alice.publicKey, 100),
-	// 	aztec.note.create(alice.publicKey, 50),
-	// ];
-	// await aztec.mintConfidentialAsset(aliceNotes, instances.zkAssetMintable, txOptions);
+  console.log("minting asset (2 notes for alice, value 100 and 50)");
+  const aliceNote1 = await aztec.note.create(alice.publicKey, 100);
+  const aliceNote2 = await aztec.note.create(alice.publicKey, 50);
+	const aliceNotes = [ aliceNote1, aliceNote2 ];
+	await aztec.mintConfidentialAsset(aliceNotes, instances.zkAssetMintable, txOptions);
 
 	// ---------------------------------------------------------------------------------------------
   // Confidential transfer of the asset	
   
-	// console.log("confidential transfer: alice creates 2 notes of value 75 for bob (destroys her notes)");
-	// const bobNotes = [
-	// 	aztec.note.create(bob.publicKey, 75),
-	// 	aztec.note.create(bob.publicKey, 75),
-	// ];
+  // console.log("confidential transfer: alice creates 2 notes of value 75 for bob (destroys her notes)");
+  // const bobNote1 = aztec.note.create(bob.publicKey, 75);
+  // const bobNote2 = aztec.note.create(bob.publicKey, 75);
+	// const bobNotes = [bobNote1, bobNote2];
 	// await aztec.confidentialTransfer(aliceNotes, [alice, alice], 
 	// 								bobNotes, 
 	// 								instances.zkAssetMintable, instances.joinSplit, accounts[0], txOptions);
