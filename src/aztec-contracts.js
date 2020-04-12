@@ -17,7 +17,7 @@
 const {	proofs, constants: { ERC20_SCALING_FACTOR } } = require("@aztec/dev-utils");
 const devUtils = require('@aztec/dev-utils');
 const { JOIN_SPLIT_PROOF, MINT_PROOF } = devUtils.proofs;
-const { note, MintProof, abiEncoder } = require("aztec.js");
+const { note, MintProof, JoinSplitProof, abiEncoder } = require("aztec.js");
 const bn128 = require('@aztec/bn128');
 const secp256k1 = require('@aztec/secp256k1');
 
@@ -114,23 +114,9 @@ async function instantiate(pantheon, txOptions) {
 	return instances;
 };
 
-// -------------------------------------------------
-const getDefaultMintNotes = async () => {
-  const newMintCounter = 50;
-  const mintedNoteValues = [20, 30];
-
-  const aztecAccount = secp256k1.generateAccount();
-  const { publicKey } = aztecAccount;
-
-  const zeroMintCounterNote = await note.createZeroValueNote();
-  const newMintCounterNote = await note.create(publicKey, newMintCounter);
-  const mintedNotes = await Promise.all(mintedNoteValues.map((mintedValue) => note.create(publicKey, mintedValue)));
-  return { zeroMintCounterNote, newMintCounterNote, mintedNotes };
-};
-
 // -------------------------------------------------------------------------------------------------
 // Mint initial supply for a zkAssetMintable
-async function mintConfidentialAsset(notes, zkAssetMintable, txOptions) {
+async function mintConfidentialAsset(notes, zkAssetMintable, aztecAccount, txOptions) {
 	// sum the value of notes to compute the total supply to mint
  	var totalMintedValue = 0;
 	for (i = 0; i < notes.length; i++) { 
@@ -139,13 +125,13 @@ async function mintConfidentialAsset(notes, zkAssetMintable, txOptions) {
 
 	// note representing new total supply
 	const zeroMintCounterNote = await note.createZeroValueNote(); // old total minted
-  const newMintCounterNote = await note.create(secp256k1.generateAccount().publicKey, totalMintedValue);
+  const newMintCounterNote = await note.create(aztecAccount.publicKey, totalMintedValue);
   const adjustedNotes  = notes.map(x => x);
 
   // construct proof
   const sender = txOptions.from;
   const proof = new MintProof(zeroMintCounterNote, newMintCounterNote, adjustedNotes, sender);
-  var proofData = proof.encodeABI()
+  const proofData = proof.encodeABI()
 
   // sending the transaction on the blockchain
 	try {
@@ -161,32 +147,24 @@ async function mintConfidentialAsset(notes, zkAssetMintable, txOptions) {
 
 // -------------------------------------------------------------------------------------------------
 // Confidential transfer. Destroy inputNotes, creates outputNotes through a joinSplit transaction
-async function confidentialTransfer(inputNotes, inputNoteOwners, outputNotes, zkAssetMintable, joinSplit, publicOwner, txOptions, display=true) {
-	// compute kPublic
+async function confidentialTransfer(inputNotes, inputNoteOwners, outputNotes, zkAssetMintable, publicOwner, txOptions, display=true) {
+	// compute kPublic, portion of tokens that will be minted from the linked ERC20 token
 	var kPublic = 0;
 	for (i = 0; i < outputNotes.length; i++) { 
   		kPublic -= outputNotes[i].k.toNumber();
 	}
 	for (i = 0; i < inputNotes.length; i++) { 
   		kPublic += inputNotes[i].k.toNumber();
-	}
+  }
 
-	// construct the joinsplit proof
-	var {
-		proofData
-	} = proof.joinSplit.encodeJoinSplitTransaction({
-		inputNotes: inputNotes,
-		outputNotes: outputNotes,
-		senderAddress: txOptions.from,
-		inputNoteOwners: inputNoteOwners,
-		publicOwner: publicOwner,
-		kPublic: kPublic,
-		validatorAddress: joinSplit.address
-	});
+  // construct proof
+  const proof = new JoinSplitProof(inputNotes, outputNotes, txOptions.from, kPublic, publicOwner);
+  const proofData = proof.encodeABI(zkAssetMintable.address);
+  const signatures = proof.constructSignatures(zkAssetMintable.address, inputNoteOwners);
 
 	// send the transaction to the blockchain
 	try {
-		let receipt = await zkAssetMintable.confidentialTransfer(proofData, txOptions)
+    let receipt = await zkAssetMintable.confidentialTransfer(JOIN_SPLIT_PROOF, proofData, signatures, txOptions);
 		if(display==true){
 			console.log("confidentialTransfer success. events:");
 			logNoteEvents(receipt.logs);

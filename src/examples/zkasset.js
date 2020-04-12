@@ -68,19 +68,23 @@ async function main() {
   const aliceNote1 = await aztec.note.create(alice.publicKey, 100);
   const aliceNote2 = await aztec.note.create(alice.publicKey, 50);
 	const aliceNotes = [ aliceNote1, aliceNote2 ];
-	await aztec.mintConfidentialAsset(aliceNotes, instances.zkAssetMintable, txOptions);
+	await aztec.mintConfidentialAsset(aliceNotes, instances.zkAssetMintable, alice, txOptions);
 
 	// ---------------------------------------------------------------------------------------------
   // Confidential transfer of the asset	
   
-  // console.log("confidential transfer: alice creates 2 notes of value 75 for bob (destroys her notes)");
-  // const bobNote1 = aztec.note.create(bob.publicKey, 75);
-  // const bobNote2 = aztec.note.create(bob.publicKey, 75);
-	// const bobNotes = [bobNote1, bobNote2];
-	// await aztec.confidentialTransfer(aliceNotes, [alice, alice], 
-	// 								bobNotes, 
-	// 								instances.zkAssetMintable, instances.joinSplit, accounts[0], txOptions);
-	// process.exit(0);
+  console.log("confidential transfer: alice creates 2 notes of value 75 for bob (destroys her notes)");
+  const bobNote1 = await aztec.note.create(bob.publicKey, 75);
+  const bobNote2 = await aztec.note.create(bob.publicKey, 75);
+	const bobNotes = [bobNote1, bobNote2];
+  await aztec.confidentialTransfer(
+                  aliceNotes,
+                  [alice, alice], 
+									bobNotes, 
+                  instances.zkAssetMintable,
+                  accounts[0],
+                  txOptions);
+	process.exit(0);
 } 
 
 main();
