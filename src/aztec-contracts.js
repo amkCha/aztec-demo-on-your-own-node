@@ -17,7 +17,7 @@
 const {	proofs, constants: { ERC20_SCALING_FACTOR } } = require("@aztec/dev-utils");
 const devUtils = require('@aztec/dev-utils');
 const { JOIN_SPLIT_PROOF, MINT_PROOF } = devUtils.proofs;
-const { note, MintProof, JoinSplitProof, abiEncoder } = require("aztec.js");
+const { note, MintProof, JoinSplitProof } = require("aztec.js");
 const bn128 = require('@aztec/bn128');
 const secp256k1 = require('@aztec/secp256k1');
 
@@ -37,7 +37,7 @@ async function instantiate(pantheon, txOptions) {
   let JOINSPLIT;
   let JOINSPLIT_FLUID;
   let ERC20_MINTABLE;
-  let FACTORY_BASE;
+  let BASE_FACTORY;
   let ADJUSTABLE_FACTORY;
   let ZKASSET_MINTABLE;
   let ZKASSET;
@@ -47,7 +47,7 @@ async function instantiate(pantheon, txOptions) {
 	JOINSPLIT           = await pantheon.readContract("JoinSplit.json");
 	JOINSPLIT_FLUID     = await pantheon.readContract("JoinSplitFluid.json");
 	ERC20_MINTABLE	    = await pantheon.readContract("ERC20Mintable.json");
-	FACTORY_BASE        = await pantheon.readContract("FactoryBase201907.json");
+	BASE_FACTORY        = await pantheon.readContract("FactoryBase201907.json");
 	ADJUSTABLE_FACTORY  = await pantheon.readContract("FactoryAdjustable201907.json");
 	ZKASSET_MINTABLE    = await pantheon.readContract("ZkAssetMintable.json");
   ZKASSET			        = await pantheon.readContract("ZkAsset.json");
@@ -61,7 +61,7 @@ async function instantiate(pantheon, txOptions) {
 	instances.joinSplit       = await JOINSPLIT.new(txOptions);
 	instances.joinSplitFluid  = await JOINSPLIT_FLUID.new(txOptions);
 	instances.erc20			      = await ERC20_MINTABLE.new(txOptions);
-  instances.factoryBase		  = await FACTORY_BASE.new(instances.ace.address, txOptions);
+  instances.baseFactory		  = await BASE_FACTORY.new(instances.ace.address, txOptions);
   instances.adjustableFactory		  = await ADJUSTABLE_FACTORY.new(instances.ace.address, txOptions);
   } catch (e) {
     console.log(e)
@@ -69,7 +69,7 @@ async function instantiate(pantheon, txOptions) {
 
   // Set factories addresses to crypto engine contract 
   try {
-  await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 1 * 256 ** 0, instances.factoryBase.address, txOptions);
+  await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 1 * 256 ** 0, instances.baseFactory.address, txOptions);
   await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 2 * 256 ** 0, instances.adjustableFactory.address, txOptions);
   await instances.ace.setFactory(1 * 256 ** 2 + 1 * 256 ** 1 + 3 * 256 ** 0, instances.adjustableFactory.address, txOptions);
   } catch(e) {
@@ -81,7 +81,7 @@ async function instantiate(pantheon, txOptions) {
 	instances.zkAssetMintable = await ZKASSET_MINTABLE.new(
 		instances.ace.address, 
 		instances.erc20.address, 	                      // ERC20 linked address (cannot be none)
-		ERC20_SCALING_FACTOR, 				          			 // scaling factor for ERC20 tokens
+		ERC20_SCALING_FACTOR, 				           			 // scaling factor for ERC20 tokens
 		0, 										                        	// canMint
 		[],  									                        	// canConvert
 		txOptions
@@ -89,7 +89,7 @@ async function instantiate(pantheon, txOptions) {
 	instances.zkAsset         = await ZKASSET.new(
 		instances.ace.address, 
 		instances.erc20.address, 						// ERC20 linked address
-		ERC20_SCALING_FACTOR, 										  // scaling factor for ERC20 tokens
+		1, 										              // scaling factor for ERC20 tokens
 		txOptions
   );
   } catch(e) {
@@ -99,13 +99,13 @@ async function instantiate(pantheon, txOptions) {
   // set CRS and proof systems addresses
 	await instances.ace.setCommonReferenceString(bn128.CRS, txOptions);
 	await instances.ace.setProof(proofs.JOIN_SPLIT_PROOF, instances.joinSplit.address, txOptions);
-	await instances.ace.setProof(proofs.MINT_PROOF, instances.joinSplitFluid.address, txOptions);
+  await instances.ace.setProof(proofs.MINT_PROOF, instances.joinSplitFluid.address, txOptions);
 	
 	console.log("deployed ace at:                " + instances.ace.address);
 	console.log("deployed joinSplit at:          " + instances.joinSplit.address);
 	console.log("deployed joinSplitFluid at:     " + instances.joinSplitFluid.address);
 	console.log("deployed erc20 at:              " + instances.erc20.address);
-	console.log("deployed factoryBase at:        " + instances.factoryBase.address);
+	console.log("deployed baseFactory at:        " + instances.baseFactory.address);
 	console.log("deployed adjustableFactory at:  " + instances.adjustableFactory.address);
 	console.log("deployed zkAssetMintable at:    " + instances.zkAssetMintable.address);
 	console.log("deployed zkAsset at:            " + instances.zkAsset.address);
@@ -179,40 +179,32 @@ async function confidentialTransfer(inputNotes, inputNoteOwners, outputNotes, zk
 
 // -------------------------------------------------------------------------------------------------
 // Convert some ERC20 to zkassets
-async function shieldsERC20toZkAsset(inputNotes, inputNoteOwner, outputNotes, zkAsset, ace, joinSplit, publicOwner, txOptions) {
+async function shieldsERC20toZkAsset(inputNotes, inputNoteOwners, outputNotes, zkAsset, ace, publicOwner, txOptions) {
 	// compute kPublic
 	var kPublic = 0;
 	for (i = 0; i < outputNotes.length; i++) { 
 		kPublic -= outputNotes[i].k.toNumber();
   	}
-  	for (i = 0; i < inputNotes.length; i++) { 
-		kPublic += inputNotes[i].k.toNumber();
-  	}
+  for (i = 0; i < inputNotes.length; i++) { 
+  kPublic += inputNotes[i].k.toNumber();
+  }
 
-  	// construct the joinsplit proof
-	var proofData = proof.joinSplit.encodeJoinSplitTransaction({
-		inputNotes:[], 
-		outputNotes: outputNotes,
-		senderAddress: txOptions.from,
-		inputNoteOwners: inputNoteOwner,
-		publicOwner: publicOwner,
-		kPublic: kPublic,
-		validatorAddress: joinSplit.address
-	});
-	
-	const depositProofOutput = abiEncoder.outputCoder.getProofOutput(proofData.expectedOutput, 0);
-	const depositProofHash   = abiEncoder.outputCoder.hashProofOutput(depositProofOutput);
+  // construct the joinsplit proof
+  const proof = new JoinSplitProof(inputNotes, outputNotes, txOptions.from, kPublic, publicOwner);
+  const proofData = proof.encodeABI(zkAsset.address);
+  const signatures = proof.constructSignatures(zkAsset.address, inputNoteOwners);
 
-	// 2. ace allows depositProofHash to sp	end erc20 tokens on behalf ethereumAccounts[0]
+  // 2. ace allows proof.hash to spend erc20 tokens on behalf ethereumAccounts[0]
 	await ace.publicApprove(
 		zkAsset.address,
-		depositProofHash,
-		kPublic,
-		txOptions
-	)
-	
+		proof.hash,
+    -kPublic, 
+    txOptions
+  )
+  
 	try {
-		let receipt = await zkAsset.confidentialTransfer(proofData.proofData, txOptions);
+    let receipt = await zkAsset.confidentialTransfer(JOIN_SPLIT_PROOF, proofData, signatures, txOptions);
+    logNoteEvents(receipt.logs);
 	} catch (error) {
 		console.log("deposit failed: " + error);
 		process.exit(-1);

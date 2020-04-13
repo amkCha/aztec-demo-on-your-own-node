@@ -32,13 +32,18 @@ const lineBreak = "_____________________________________________________________
 async function main(){
     // get web3 Ethereum accounts and setup default transaction options
     let accounts  = await pantheon.getAccounts();
-	let txOptions = [
-        {from: accounts[0], gasLimit: "0x47B760", gasPrice: "0x12A05F200"},
-        {from: accounts[1], gasLimit: "0x47B760", gasPrice: "0x12A05F200"}
-    ];
 
-    // deploy AZTEC contracts (CryptoEngine, proof validators and ZkAssetMintable)
-	let instances = await aztec.instantiate(pantheon, txOptions[0]);
+    // Question 1 -- Lift gasLimit ? 
+    // let txOptions = [
+    //       {from: accounts[0], gasLimit: "0x47B760", gasPrice: "0x12A05F200"},
+    //       {from: accounts[1], gasLimit: "0x47B760", gasPrice: "0x12A05F200"}
+    //   ];
+    let txOptions = [
+      {from: accounts[0]},
+      {from: accounts[1]}
+    ];
+      // deploy AZTEC contracts (CryptoEngine, proof validators and ZkAssetMintable)
+    let instances = await aztec.instantiate(pantheon, txOptions[0]);
     
     // ---------------------------------------------------------------------------------------------
 	// generate random AZTEC accounts for alice and bob
@@ -46,8 +51,12 @@ async function main(){
 	// from Ethereum accounts. Though in practice, the AZTEC transaction (manipulating notes owned
 	// by alice and bob) would need to be signed by a valid Ethereum account (presumably owned by
 	// alice or bob)
-	const alice = aztec.secp256k1.generateAccount();
-	const bob   = aztec.secp256k1.generateAccount();
+    const alice = aztec.secp256k1.generateAccount();
+    const bob   = aztec.secp256k1.generateAccount();
+    console.log("creating identities:")
+    console.log(JSON.stringify({name: "alice", address: alice.address}, null, 2));
+    console.log(JSON.stringify({name: "bob", address: bob.address}, null, 2));
+    console.log(lineBreak);
 
     // ---------------------------------------------------------------------------------------------
     // Minting inital supply of confidental asset ERC20
@@ -57,26 +66,24 @@ async function main(){
 
     // delegate erc20 token access from account[0] to AZTEC.ACE contract
     await instances.erc20.approve(
-		instances.ace.address,
-		erc20totalSupply,
-		txOptions[0]
-	);
+      instances.ace.address,
+      erc20totalSupply,
+      txOptions[0]
+    );
     await logERC20balances(instances.erc20, accounts);
 
     // ---------------------------------------------------------------------------------------------
     // accounts[0] makes a deposit
     console.log("alice shields 150 erc20 tokens to AZTEC notes");
-    const aliceNotes = [
-		aztec.note.create(alice.publicKey, 100),
-		aztec.note.create(alice.publicKey, 50),
-	];
+    const aliceNote1 = await aztec.note.create(alice.publicKey, 100);
+    const aliceNote2 = await aztec.note.create(alice.publicKey, 50);
+    const aliceNotes = [aliceNote1, aliceNote2];
     await aztec.shieldsERC20toZkAsset(
         [],
-        [],
+        [], 
         aliceNotes,
         instances.zkAsset,
         instances.ace,
-        instances.joinSplit,
         accounts[0],
         txOptions[0]
     );
@@ -85,16 +92,14 @@ async function main(){
     // ---------------------------------------------------------------------------------------------
     // confidential transfer
     console.log("alice privately transfers 150 AZTEC notes to bob");
-    const bobNotes = [
-        aztec.note.create(bob.publicKey, 75),
-        aztec.note.create(bob.publicKey, 75),
-    ];
+    const bobNotes1 = await aztec.note.create(bob.publicKey, 75);
+    const bobNotes2 = await aztec.note.create(bob.publicKey, 75);
+    const bobNotes = [bobNotes1, bobNotes2];
     await aztec.confidentialTransfer(
         aliceNotes, 
         [alice, alice],
         bobNotes, 
         instances.zkAsset,
-        instances.joinSplit,
         accounts[0],
         txOptions[0],
         false
@@ -104,18 +109,16 @@ async function main(){
     // ---------------------------------------------------------------------------------------------
     // Confidential transfer to accounts[1]
     console.log("bob unshields 100 AZTEC notes (to erc20 tokens)");
-    const bobNotes_1 = [
-        aztec.note.create(bob.publicKey, 25),
-        aztec.note.create(bob.publicKey, 25),
-    ] 
+    const bobNotes_1 = await aztec.note.create(bob.publicKey, 25);
+    const bobNotes_2 = await aztec.note.create(bob.publicKey, 25);
+    const bobNotes_unshield = [bobNotes_1, bobNotes_2]; 
     // since we do a utxo transaction with 150 as input (bobNotes) and 50 as output (bobNotes_1)
     // we're left with a positive balance of 100 that will be unshielded to ERC20 tokens
     await aztec.confidentialTransfer(
         bobNotes, 
         [bob, bob],
-        bobNotes_1, 
+        bobNotes_unshield, 
         instances.zkAsset,
-        instances.joinSplit,
         accounts[1],
         txOptions[0],
         false
@@ -125,15 +128,14 @@ async function main(){
     // ---------------------------------------------------------------------------------------------
     // confidentialTransfer from bob to alice
     console.log("bob privately transfers 20 AZTEC notes and 30 erc20 tokens to alice");
-    const aliceNotes_1 = [
-        aztec.note.create(alice.publicKey, 20),
-    ] // bobNotes_1 value is 50, output aztec notes = 20. 
+    const aliceNotes_1 = await aztec.note.create(alice.publicKey, 20);
+    const aliceNotes_private_transfer = [ aliceNotes_1 ]
+    // bobNotes_1 value is 50, output aztec notes = 20. 
     await aztec.confidentialTransfer(
-        bobNotes_1, 
+        bobNotes_unshield, 
         [bob, bob],
-        aliceNotes_1, 
+        aliceNotes_private_transfer, 
         instances.zkAsset,
-        instances.joinSplit,
         accounts[0],
         txOptions[0],
         false
