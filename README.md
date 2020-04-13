@@ -1,7 +1,4 @@
-# pantheon-aztec-quickstart
-
-## Warning :rotating_light:
-This repository is now DEPRECATED. 
+# hyperledger-besu-aztec-quickstart
 
 ## dependencies
 
@@ -9,24 +6,25 @@ You need to install `node`, `yarn` and `docker`.
 
 ## getting started
 
-Please read: 
-- [our blog post for more context](https://pegasys.tech)
+Interesting to read:
 - AZTEC [whitepaper](https://github.com/AztecProtocol/AZTEC/blob/master/AZTEC.pdf)
 - AZTEC [specification](https://github.com/AztecProtocol/specification)
 - our [cheat sheet](aztec_cheatsheet.pdf)
 
-### run pantheon (dev mode)
+### run HyperLedger Besu private test network
 
-We're going to run a single-node blockchain with mining enabled. More info [here](https://docs.pantheon.pegasys.tech/en/stable/Getting-Started/Run-Docker-Image/).
+We're going to run a single-node blockchain with mining enabled.
+
+More info [here](https://besu.hyperledger.org/en/1.3.0/Tutorials/Quickstarts/Private-Network-Quickstart/).
 ```console
-docker pull pegasyseng/pantheon:latest
-docker run -p 8545:8545  pegasyseng/pantheon:latest --miner-enabled --miner-coinbase fe3b557e8fb62b89f4916b721be55ceb828dbd73 --rpc-http-cors-origins="all"  --rpc-http-enabled --network=dev
+git clone https://github.com/PegaSysEng/besu-quickstart.git
+./run.sh
 ```
 
 ### run our aztec demo
 
 ```console
-git clone git@github.com:pegasyseng/pantheon-aztec-quickstart.git
+git clone git@github.com:amkCha/aztec-demo-on-your-own-node.git
 cd pantheon-aztec-quickstart
 yarn install
 ```

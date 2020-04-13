@@ -26,7 +26,7 @@ const lineBreak = "_____________________________________________________________
 
 // -------------------------------------------------------------------------------------------------
 // Instantiate contracts: CryptoEngine, proof systems, factories, zkAsset[...]
-async function instantiate(pantheon, txOptions) {
+async function instantiate(besu, txOptions) {
 	var instances = {};
 
 	console.log(lineBreak);
@@ -43,14 +43,14 @@ async function instantiate(pantheon, txOptions) {
   let ZKASSET;
 
   try {
-  ACE                 = await pantheon.readContract("ACE.json");
-	JOINSPLIT           = await pantheon.readContract("JoinSplit.json");
-	JOINSPLIT_FLUID     = await pantheon.readContract("JoinSplitFluid.json");
-	ERC20_MINTABLE	    = await pantheon.readContract("ERC20Mintable.json");
-	BASE_FACTORY        = await pantheon.readContract("FactoryBase201907.json");
-	ADJUSTABLE_FACTORY  = await pantheon.readContract("FactoryAdjustable201907.json");
-	ZKASSET_MINTABLE    = await pantheon.readContract("ZkAssetMintable.json");
-  ZKASSET			        = await pantheon.readContract("ZkAsset.json");
+  ACE                 = await besu.readContract("ACE.json");
+	JOINSPLIT           = await besu.readContract("JoinSplit.json");
+	JOINSPLIT_FLUID     = await besu.readContract("JoinSplitFluid.json");
+	ERC20_MINTABLE	    = await besu.readContract("ERC20Mintable.json");
+	BASE_FACTORY        = await besu.readContract("FactoryBase201907.json");
+	ADJUSTABLE_FACTORY  = await besu.readContract("FactoryAdjustable201907.json");
+	ZKASSET_MINTABLE    = await besu.readContract("ZkAssetMintable.json");
+  ZKASSET			        = await besu.readContract("ZkAsset.json");
   } catch (e) {
     console.log(e)
   }

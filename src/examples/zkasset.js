@@ -14,13 +14,13 @@
 
 // -------------------------------------------------------------------------------------------------
 // imports
-const pantheon  =  require("../pantheon.js");
+const besu      =  require("../hyperledger-besu.js");
 const aztec     =  require("../aztec-contracts.js");
 const lineBreak = "________________________________________________________________________\n";
 
 /*
 	This example:
-	1. Connect to Pantheon blockchain
+	1. Connect to HyperLedger Besu blockchain
 	2. Deploy AZTEC contracts
 	3. Mint a confidential asset with an initial supply
 	4. Executes a confidential joinSplit transaction
@@ -31,18 +31,17 @@ const lineBreak = "_____________________________________________________________
 
 async function main() {
 	// get web3 Ethereum accounts and setup default transaction options
-	let accounts  = await pantheon.getAccounts();
-
-  // Question 1 -- Lift gasLimit ? 
-  let txOptions = {from: accounts[0]};
-  // let txOptions = {from: accounts[0], gasLimit: "0x47B760", gasPrice: "0x12A05F200"};
+	let accounts  = await besu.getAccounts();
+  // gasLimit calibrated to deploy AZTEC contracts
+  let txOptions = {from: accounts[0], gasLimit: "0x53EC60"};
+  
 
 	// deploy AZTEC contracts (CryptoEngine, proof validators and ZkAssetMintable)
   
   let instances;
   
   try {
-    instances = await aztec.instantiate(pantheon, txOptions);
+    instances = await aztec.instantiate(besu, txOptions);
   } catch (e) {
     console.log(e)
   }
