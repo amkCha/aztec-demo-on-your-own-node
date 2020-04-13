@@ -24,8 +24,8 @@ git clone https://github.com/PegaSysEng/besu-quickstart.git
 ### run our aztec demo
 
 ```console
-git clone git@github.com:amkCha/aztec-demo-on-your-own-node.git
-cd pantheon-aztec-quickstart
+git clone git@github.com:amkCha/hyperledger-besu-aztec-demo.git
+cd hyperledger-besu-aztec-demo
 yarn install
 ```
 ```console
@@ -35,6 +35,14 @@ yarn run zkasset-erc20
 yarn run zkasset
 ```
 
+### use blockchain explorer as medium for your demo
+
+HyperLedger Besu private test network comes with a blockchain explorer (Alethio)
+You can find the explorer displayed on the following port
+
+```
+Web block explorer address          : http://localhost:25000/
+```
 
 ## misc
 
